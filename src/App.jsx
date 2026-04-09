@@ -48,7 +48,7 @@ function ApiKeyBar({ apiKey, setApiKey, onTest, testing }) {
         type={visible ? 'text' : 'password'}
         value={apiKey}
         onChange={e => setApiKey(e.target.value)}
-        placeholder="gsk_..."
+        placeholder="gsk_… (from console.groq.com)"
         className="flex-1 min-w-0 border border-gray-300 rounded px-2 py-1 text-sm font-mono bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       <button
@@ -389,7 +389,7 @@ async function callGroq(apiKey, prompt, showToast) {
         'Authorization': `Bearer ${key}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 2000,
         temperature: 0.3,
@@ -531,9 +531,15 @@ export default function App() {
     if (!trimmedKey) { showToast('❌ Enter an API key first'); return }
     setTesting(true)
     try {
-      // Use models list endpoint — only checks auth, no model dependency
-      const res = await fetch('https://api.groq.com/openai/v1/models', {
-        headers: { 'Authorization': `Bearer ${trimmedKey}` },
+      // Use a real completions call — models list is unauthenticated on Groq
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${trimmedKey}` },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages: [{ role: 'user', content: 'Hi' }],
+          max_tokens: 1,
+        }),
       })
       if (res.ok) {
         setApiKey(trimmedKey)
