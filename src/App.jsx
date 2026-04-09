@@ -388,7 +388,7 @@ async function callGroq(apiKey, prompt, showToast) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'mixtral-8x7b-32768',
+        model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 2000,
         temperature: 0.3,
@@ -531,13 +531,15 @@ export default function App() {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: 'mixtral-8x7b-32768', messages: [{ role: 'user', content: 'Hi' }], max_tokens: 5 }),
+        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: 'Hi' }], max_tokens: 5 }),
       })
       if (res.ok) {
         localStorage.setItem('groq_api_key', apiKey)
         showToast('✅ Connection successful!')
       } else {
-        showToast('❌ Invalid API key')
+        const err = await res.json().catch(() => null)
+        const msg = err?.error?.message || `HTTP ${res.status}`
+        showToast(`❌ ${msg}`)
       }
     } catch (e) {
       showToast('❌ Connection failed: ' + e.message)
