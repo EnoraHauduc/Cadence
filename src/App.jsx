@@ -379,13 +379,14 @@ function RightPanel({ speech, onExport, onImportFile, onRehearse }) {
 // ─── Groq API ────────────────────────────────────────────────────────────────
 
 async function callGroq(apiKey, prompt, showToast) {
-  if (!apiKey) { showToast('❌ API key required'); return null }
+  const key = (apiKey || '').trim()
+  if (!key) { showToast('❌ API key required'); return null }
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${key}`,
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
@@ -492,7 +493,7 @@ const DEFAULT_SPEECH = {
 
 export default function App() {
   const { toasts, show: showToast } = useToast()
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('groq_api_key') || '')
+  const [apiKey, setApiKey] = useState(() => (localStorage.getItem('groq_api_key') || '').trim())
   const [testing, setTesting] = useState(false)
   const [speech, setSpeech] = useState(() => {
     try {
@@ -526,15 +527,17 @@ export default function App() {
 
   // ── Test connection ──
   const testConnection = async () => {
+    const trimmedKey = apiKey.trim()
+    if (!trimmedKey) { showToast('❌ Enter an API key first'); return }
     setTesting(true)
     try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: 'Hi' }], max_tokens: 5 }),
+      // Use models list endpoint — only checks auth, no model dependency
+      const res = await fetch('https://api.groq.com/openai/v1/models', {
+        headers: { 'Authorization': `Bearer ${trimmedKey}` },
       })
       if (res.ok) {
-        localStorage.setItem('groq_api_key', apiKey)
+        setApiKey(trimmedKey)
+        localStorage.setItem('groq_api_key', trimmedKey)
         showToast('✅ Connection successful!')
       } else {
         const err = await res.json().catch(() => null)
@@ -542,7 +545,7 @@ export default function App() {
         showToast(`❌ ${msg}`)
       }
     } catch (e) {
-      showToast('❌ Connection failed: ' + e.message)
+      showToast('❌ Network error: ' + e.message)
     }
     setTesting(false)
   }
